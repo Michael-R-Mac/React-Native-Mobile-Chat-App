@@ -1,47 +1,74 @@
 import { useEffect, React, useState } from "react";
 import { StyleSheet, View, KeyboardAvoidingView, Platform } from "react-native";
-import { Bubble, GiftedChat } from "react-native-gifted-chat";
+import { Bubble, GiftedChat, InputToolbar } from "react-native-gifted-chat";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Chat component displays a chat screen with the user's, background color and messages.
-const Chat = ({ route, navigation }) => {
+const Chat = ({ route, navigation, db, isConnected }) => {
   // State for the messages in the chat
   const [messages, setMessages] = useState([]);
 
   // Destructure the name and background from the route params
-  const { name, background } = route.params;
+  const { name, background, userID } = route.params;
 
-  // Effect hook to set the title of the navigation and initialize the messages
+  // Effect hook to set the title of the navigation
   useEffect(() => {
-    // Set the title of the navigation to the user's name
     navigation.setOptions({ title: name });
-
-    // Initialize the messages with a default message and a system message
-    setMessages([
-      {
-        _id: 1,
-        text: "Hello developer",
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: "React Native",
-          avatar: "https://placeimg.com/140/140/any",
-        },
-      },
-      {
-        _id: 2,
-        text: "This is a system message",
-        createdAt: new Date(),
-        system: true,
-      },
-    ]);
   }, []);
+
+  // Clean up code outside the use Effect to avoid memory leaks.
+  let unsubMessages;
+
+  // Effect hook to initialize the messages
+  useEffect(() => {
+    if (isConnected === true) {
+      // unregister current onSnapshot() listener to avoid registering multiple listeners when
+      // useEffect code is re-executed.
+      if (unsubMessages) unsubMessages();
+      unsubMessages = null;
+      const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+      unsubMessages = onSnapshot(q, (docs) => {
+        let newMessages = [];
+        docs.forEach((doc) => {
+          newMessages.push({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: new Date(doc.data().createdAt.toMillis()),
+          });
+        });
+        cacheMessages(newMessages);
+        setMessages(newMessages);
+      });
+    } else loadCachedMessages();
+
+    return () => {
+      if (unsubMessages) unsubMessages();
+    };
+  }, [isConnected]);
+
+  const loadCachedMessages = async () => {
+    const cachedMessages = (await AsyncStorage.getItem("messages")) || [];
+    setMessages(JSON.parse(cachedMessages));
+  };
+
+  const cacheMessages = async (messagesToCache) => {
+    try {
+      await AsyncStorage.setItem("messages", JSON.stringify(messagesToCache));
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
 
   // Function to handle sending new messages
   const onSend = (newMessages) => {
-    // Append the new messages to the existing messages using GiftedChat.append
-    setMessages((previousMessages) =>
-      GiftedChat.append(previousMessages, newMessages)
-    );
+    addDoc(collection(db, "messages"), newMessages[0]);
   };
 
   // Function to render the bubble
@@ -62,15 +89,21 @@ const Chat = ({ route, navigation }) => {
     );
   };
 
+  const renderInputToolbar = (props) => {
+    if (isConnected) return <InputToolbar {...props} />;
+    else return null;
+  };
+
   // Render the chat component
   return (
     <View style={[styles.container, { backgroundColor: background }]}>
       <GiftedChat
         messages={messages}
         renderBubble={renderBubble}
+        renderInputToolbar={renderInputToolbar}
         onSend={(messages) => onSend(messages)}
         user={{
-          _id: 1,
+          _id: userID,
           name,
         }}
       />
