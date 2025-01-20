@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { useNetInfo } from "@react-native-community/netinfo";
 import { Alert } from "react-native";
+import { getStorage } from "firebase/storage";
 /**
  * App component is the main component of the application.
  * It sets up the navigation stack with two screens: Start and Chat.
@@ -25,6 +26,7 @@ import { Alert } from "react-native";
 const App = () => {
   const connectionStatus = useNetInfo();
 
+  // useEffect hook to handle network changes (online/offline)
   useEffect(() => {
     if (connectionStatus.isConnected === false) {
       Alert.alert("Connection Lost!");
@@ -34,6 +36,7 @@ const App = () => {
     }
   }, [connectionStatus.isConnected]);
 
+  // Firebase configuration (my specific config)
   const firebaseConfig = {
     apiKey: "AIzaSyCvuxgC0OCAH5Fwh7XhPpxUWBTxiZ9sc9I",
     authDomain: "chat-app-89aaf.firebaseapp.com",
@@ -47,8 +50,9 @@ const App = () => {
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);
 
-  // Initialize Cloud Firestore and get a reference to the service
+  // Get the Firestore and Storage instances
   const db = getFirestore(app);
+  const storage = getStorage(app);
 
   return (
     <NavigationContainer>
@@ -59,6 +63,7 @@ const App = () => {
             <Chat
               isConnected={connectionStatus.isConnected}
               db={db}
+              storage={storage}
               {...props}
             />
           )}

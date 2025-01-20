@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
-// Start component for the start screen
+// Start component is the first screen of the app. It allows users to sign in anonymously and navigate to the chat screen.
 const Start = ({ navigation }) => {
   const [name, setName] = useState(""); // State for the user's name
   const [background, setBackground] = useState(""); // State for the selected background color
@@ -93,10 +93,13 @@ const Start = ({ navigation }) => {
           </View>
           {/* to start chat */}
           <TouchableOpacity
+            //Make the component accessible
             accessible={true}
             accessibilityRole="button"
             accessibilityHint="You can choose to enter the chat room"
+            //Style the component
             style={styles.button}
+            //Handle the press event
             onPress={() => {
               if (name == "") {
                 Alert.alert("Add a name");
@@ -142,7 +145,6 @@ const styles = StyleSheet.create({
     margin: 25,
   },
   box: {
-    // backgroundColor: '#ffffff',
     backgroundColor: "#f2f2f2",
     borderRadius: 4,
     width: "88%",
