@@ -1,18 +1,19 @@
-import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 // for sending geolocations
 import * as Location from "expo-location";
+import { v4 as uuidv4 } from "uuid";
 
 //This component renders a set of custom actions for the chat interface. It includes buttons for sending images, taking photos, and sharing locations.
-const CustomActions = (
+const CustomActions = ({
   wrapperStyle,
   iconTextStyle,
   onSend,
   storage,
-  userID
-) => {
+  userID,
+}) => {
   // Initialize the action sheet
   const actionSheet = useActionSheet();
   const onActionPress = () => {
@@ -79,7 +80,16 @@ const CustomActions = (
       //Get the download URL of the uploaded image
       const imageURL = await getDownloadURL(snapshot.ref);
       //Send the image URL as a message
-      onSend({ image: imageURL });
+      onSend([
+        {
+          _id: uuidv4(),
+          createdAt: new Date(),
+          user: {
+            _id: userID,
+          },
+          image: imageURL,
+        },
+      ]);
     });
   };
 

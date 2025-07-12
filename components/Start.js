@@ -1,4 +1,4 @@
-import { useState, React } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   View,
@@ -8,15 +8,12 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { getAuth, signInAnonymously } from "firebase/auth";
-
+import { signInAnonymously } from "firebase/auth";
+import { auth } from "../firebase";
 // Start component is the first screen of the app. It allows users to sign in anonymously and navigate to the chat screen.
 const Start = ({ navigation }) => {
   const [name, setName] = useState(""); // State for the user's name
   const [background, setBackground] = useState(""); // State for the selected background color
-
-  // Get the Firebase authentication object
-  const auth = getAuth();
 
   /**
    * Sign in the user anonymously and navigate to the Chat screen with the user's name,

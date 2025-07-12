@@ -45,7 +45,7 @@ const Chat = ({ route, navigation, db, storage, isConnected }) => {
         let newMessages = [];
         docs.forEach((doc) => {
           newMessages.push({
-            id: doc.id,
+            _id: doc.id,
             ...doc.data(),
             createdAt: new Date(doc.data().createdAt.toMillis()),
           });
@@ -66,8 +66,12 @@ const Chat = ({ route, navigation, db, storage, isConnected }) => {
 
   // Function to load the cached messages from AsyncStorage
   const loadCachedMessages = async () => {
-    const cachedMessages = (await AsyncStorage.getItem("messages")) || [];
-    setMessages(JSON.parse(cachedMessages));
+    const cachedMessages = await AsyncStorage.getItem("messages");
+    if (cachedMessages) {
+      setMessages(JSON.parse(cachedMessages));
+    } else {
+      setMessages([]);
+    }
   };
 
   // Function to cache the messages in AsyncStorage
