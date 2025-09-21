@@ -13,7 +13,7 @@ import CustomActions from "./CustomActions";
 import MapView from "react-native-maps";
 
 // Chat component displays a chat screen with the user's, background color and messages.
-const Chat = ({ route, navigation, db, storage, isConnected }) => {
+const Chat = ({ route, navigation, db, storage, isConnected, auth }) => {
   // State for the messages in the chat
   const [messages, setMessages] = useState([]);
 
@@ -38,28 +38,39 @@ const Chat = ({ route, navigation, db, storage, isConnected }) => {
 
       // Create a query to retrieve the messages from Firestore.
       const q = query(collection(db, "messages"), orderBy("createdAt", "desc"));
+      console.log(" Listening to Firestore messages...");
 
       // Listen to the query and update the messages state when the data changes.
       unsubMessages = onSnapshot(q, (docs) => {
         // Convert the Firestore documents to a format compatible with GiftedChat.
         let newMessages = [];
         docs.forEach((doc) => {
+          const data = doc.data();
+          // Make sure user is an object
+          let user = data.user;
+          if (typeof user === "string") {
+            user = { _id: user, name: "Unknown" }; // fallback or parse as needed
+          }
           newMessages.push({
             _id: doc.id,
             ...doc.data(),
             createdAt: new Date(doc.data().createdAt.toMillis()),
           });
         });
-
+        console.log("Firestore messages received:", newMessages.length);
         // Cache the messages and update the state.
         cacheMessages(newMessages);
         setMessages(newMessages);
       });
       // If the user is offline, load the cached messages.
-    } else loadCachedMessages();
+    } else {
+      loadCachedMessages();
+      console.log("Offline mode. Loading cached messages...");
+    }
 
     // Clean up the onSnapshot listener when the component unmounts.
     return () => {
+      console.log("Cleaning up Firestore listener.");
       if (unsubMessages) unsubMessages();
     };
   }, [isConnected]);
@@ -84,12 +95,22 @@ const Chat = ({ route, navigation, db, storage, isConnected }) => {
   };
 
   // Function to handle sending new messages
-  const onSend = async (newMessages) => {
+  const onSend = async (newMessages = []) => {
+    const message = newMessages[0];
+    console.log("Sending message:", message);
     try {
-      // Add the new message to Firestore
-      await addDoc(collection(db, "messages"), newMessages[0]);
+      const messageToSend = {
+        ...message,
+        createdAt: new Date(),
+        user: {
+          _id: userID,
+          name: name,
+        },
+      };
+      const docRef = await addDoc(collection(db, "messages"), messageToSend);
+      console.log("Message added to Firestore with ID:", docRef.id);
     } catch (error) {
-      console.log(error.message);
+      console.error("Error sending message:", error.message);
     }
   };
 
@@ -118,27 +139,48 @@ const Chat = ({ route, navigation, db, storage, isConnected }) => {
   };
 
   // Defines a function that renders a CustomActions component with the provided storage, userID, and additional props.
-  const renderCustomActions = (props) => {
-    return <CustomActions storage={storage} userID={userID} {...props} />;
+  const renderCustomActions = (...props) => {
+    return (
+      <CustomActions
+        storage={storage}
+        userID={userID}
+        name={name}
+        onSend={(message) => {
+          console.log("Custom action message:", message);
+          onSend([message]);
+        }}
+        {...props}
+      />
+    );
   };
 
   // Conditionally renders a MapView component when a message contains a location
   const renderCustomView = (props) => {
     const { currentMessage } = props;
-    if (currentMessage.location) {
-      return (
-        <MapView
-          style={{ width: 150, height: 100, borderRadius: 13, margin: 3 }}
-          region={{
-            latitude: currentMessage.location.latitude,
-            longitude: currentMessage.location.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          }}
-        />
-      );
+    console.log("CustomView message:", currentMessage);
+
+    if (
+      currentMessage.location &&
+      typeof currentMessage.location.latitude === "number" &&
+      typeof currentMessage.location.longitude === "number"
+    ) {
+      console.log(" Rendering MapView with:", currentMessage.location);
+
+      if (currentMessage.location) {
+        return (
+          <MapView
+            style={styles.mapView}
+            region={{
+              latitude: currentMessage.location.latitude,
+              longitude: currentMessage.location.longitude,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          />
+        );
+      }
+      return null;
     }
-    return null;
   };
 
   // Render the chat component
@@ -183,6 +225,21 @@ const Chat = ({ route, navigation, db, storage, isConnected }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  customViewContainer: {
+    width: 250,
+    height: 150,
+    borderRadius: 10,
+    overflow: "hidden",
+    margin: 5,
+    borderColor: "blue",
+    borderWidth: 1,
+  },
+  mapView: {
+    width: 150,
+    height: 100,
+    borderRadius: 13,
+    margin: 3,
   },
 });
 

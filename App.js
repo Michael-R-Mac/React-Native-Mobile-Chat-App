@@ -10,7 +10,7 @@ import Start from "./components/Start";
 import Chat from "./components/Chat";
 
 // Firebase (already initialized in firebase.js)
-import { db, storage } from "./firebase";
+import { db, storage, auth } from "./firebase";
 import { disableNetwork, enableNetwork } from "firebase/firestore";
 
 // Net Info
@@ -41,6 +41,7 @@ const App = () => {
               isConnected={connectionStatus.isConnected}
               db={db}
               storage={storage}
+              auth={auth}
               {...props}
             />
           )}

@@ -34,6 +34,7 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-helloworld/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		FB8A1AE8F9084897B590CB3F /* noop-file.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = "noop-file.swift"; path = "helloworld/noop-file.swift"; sourceTree = "<group>"; };
+		1263B56517974563BC351F05 /* helloworld-Bridging-Header.h */ = {isa = PBXFileReference; name = "helloworld-Bridging-Header.h"; path = "helloworld/helloworld-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +61,7 @@
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				FB8A1AE8F9084897B590CB3F /* noop-file.swift */,
 				14E511D042A6B12299416F2A /* PrivacyInfo.xcprivacy */,
+				1263B56517974563BC351F05 /* helloworld-Bridging-Header.h */,
 			);
 			name = helloworld;
 			sourceTree = "<group>";
@@ -201,6 +203,7 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				DAFA87F7C4F78C35D9BDEFD0 /* PrivacyInfo.xcprivacy in Resources */,
+				6A4CFE676C4B440A99AAB1EE /* helloworld-Bridging-Header.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -340,11 +343,12 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.michaelrmac.helloworld;
-				PRODUCT_NAME = helloworld;
+				PRODUCT_NAME = "helloworld";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+				SWIFT_OBJC_BRIDGING_HEADER = helloworld/helloworld-Bridging-Header.h;
 			};
 			name = Debug;
 		};
@@ -367,10 +371,11 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.michaelrmac.helloworld;
-				PRODUCT_NAME = helloworld;
+				PRODUCT_NAME = "helloworld";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
+				SWIFT_OBJC_BRIDGING_HEADER = helloworld/helloworld-Bridging-Header.h;
 			};
 			name = Release;
 		};

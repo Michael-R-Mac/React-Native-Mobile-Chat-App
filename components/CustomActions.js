@@ -2,9 +2,7 @@ import { Text, View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useActionSheet } from "@expo/react-native-action-sheet";
 import * as ImagePicker from "expo-image-picker";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-// for sending geolocations
 import * as Location from "expo-location";
-import { v4 as uuidv4 } from "uuid";
 
 //This component renders a set of custom actions for the chat interface. It includes buttons for sending images, taking photos, and sharing locations.
 const CustomActions = ({
@@ -13,6 +11,7 @@ const CustomActions = ({
   onSend,
   storage,
   userID,
+  name,
 }) => {
   // Initialize the action sheet
   const actionSheet = useActionSheet();
@@ -58,61 +57,86 @@ const CustomActions = ({
     //Get the current timestamp
     const timeStamp = new Date().getTime();
     //Get the image name from the URI
-    const imageName = uri.split("/")[uri.split("/").length - 1];
+    const rawName = uri.split("/").pop() || "image.jpg";
+    const cleanName = rawName.replace(/[^a-zA-Z0-9.\-_]/g, "_"); // Sanitize filename
+    // Optional: use folder structure
     //Combine the user ID, timestamp, and image name to create a unique reference string
-    return `${userID}-${timeStamp}-${imageName}`;
+    return `images/${userID}/${timeStamp}-${cleanName}`;
   };
 
   //This function uploads the image to Firebase Storage and sends the image URL as a message.
   const uploadAndSendImage = async (imageURI) => {
-    //Generate a unique reference string for the image
-    const uniqueRefString = generateReference(imageURI);
-    //Create a new upload reference in Firebase Storage
-    const newUploadRef = ref(storage, uniqueRefString);
-    //Fetch the image from the URI and convert it to a blob
+    try {
+      console.log("Uploading image with URI:", imageURI);
+      //Generate a unique reference string for the image
+      const uniqueRefString = generateReference(imageURI);
+      //Create a new upload reference in Firebase Storage
+      const newUploadRef = ref(storage, uniqueRefString);
+      //Fetch the image from the URI and convert it to a blob
 
-    const response = await fetch(imageURI);
-    const blob = await response.blob();
-    blob.type = "image/jpeg";
+      const response = await fetch(imageURI);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch image from URI. Status: ${response.status}`
+        );
+      }
+      const blob = await response.blob();
+      blob.type = "image/jpeg";
+      console.log("Image blob created. Uploading to Firebase...");
 
-    //Upload the blob to Firebase Storage
-    uploadBytes(newUploadRef, blob).then(async (snapshot) => {
+      //Upload the blob to Firebase Storage
+      const snapshot = await uploadBytes(newUploadRef, blob);
+      console.log(" Upload complete");
+
       //Get the download URL of the uploaded image
       const imageURL = await getDownloadURL(snapshot.ref);
+      console.log("Upload complete. Image URL:", imageURL);
+
       //Send the image URL as a message
       onSend([
         {
-          _id: uuidv4(),
+          _id: `${new Date().getTime()}-${userID}`,
           createdAt: new Date(),
           user: {
             _id: userID,
+            name: name,
           },
           image: imageURL,
         },
       ]);
-    });
+      console.log("Sending image message with URL:", imageURL);
+    } catch (error) {
+      console.error("Error uploading or sending image:", error);
+    }
   };
-
   //This function is called when the user selects the "Choose From Library" option. It allows the user to select an image from their library and sends it as a message.
   const pickImage = async () => {
+    console.log("Requesting media library permissions...");
     // Request permission to access the media library
     let permissions = await ImagePicker.requestMediaLibraryPermissionsAsync();
     console.log("Media Library Permission Status: ", permissions);
 
     // Check if permission was granted
     if (permissions?.granted) {
+      console.log("Launching image library...");
       // Launch the image library
       let result = await ImagePicker.launchImageLibraryAsync();
+      console.log("Image picker result:", result);
 
       // Check if the user selected an image and Upload and send the image
-      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
+      if (!result.canceled) {
+        console.log("User selected image:", result.assets[0].uri);
+        await uploadAndSendImage(result.assets[0].uri);
+      } else {
+        console.log("User canceled image picking.");
+      }
       // Display an error message if the user cancelled
-      else Alert.alert("Permissions haven't been granted.");
-    }
+    } else Alert.alert("Permissions haven't been granted.");
   };
 
   //This function is called when the user selects the "Take Picture" option. It allows the user to take a new photo and sends it as a message.
   const takePhoto = async () => {
+    console.log("Requesting camera permissions...");
     // Request permission to access the camera
     let permissions = await ImagePicker.requestCameraPermissionsAsync();
     console.log("Camera Permission Status: ", permissions);
@@ -121,11 +145,19 @@ const CustomActions = ({
     if (permissions?.granted) {
       // Launch the camera
       let result = await ImagePicker.launchCameraAsync();
+      console.log("Camera result:", result);
 
       // Check if the user took a photo and Upload and send the photo
-      if (!result.canceled) await uploadAndSendImage(result.assets[0].uri);
+      if (!result.canceled) {
+        console.log("User took a photo:", result.assets[0].uri);
+        await uploadAndSendImage(result.assets[0].uri);
+      } else {
+        console.log("User canceled photo capture.");
+      }
       // Display an error message if the user cancelled
-      else Alert.alert("Permissions haven't been granted.");
+    } else {
+      Alert.alert("Camera permissions not granted.");
+      console.warn("Camera permissions not granted.");
     }
   };
 
@@ -142,17 +174,23 @@ const CustomActions = ({
 
       // Check if the location was obtained successfully
       if (location) {
-        onSend({
-          // Send the location as a message
-          location: {
-            longitude: location.coords.longitude,
-            latitude: location.coords.latitude,
+        onSend([
+          {
+            _id: `${new Date().getTime()}-${userID}`,
+            createdAt: new Date(),
+            user: {
+              _id: userID,
+              name: name,
+            },
+            location: {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            },
           },
-        });
+        ]);
       } else Alert.alert("Error occurred while fetching location");
     } else Alert.alert("Permissions to read location aren't granted");
   };
-
   //Render the CustomActions component. This component renders a TouchableOpacity with a "+" icon. When pressed, it displays an action sheet with options for sending images, taking photos, and sharing locations.
   return (
     <TouchableOpacity

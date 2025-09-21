@@ -86,7 +86,7 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.helloworld"
+    namespace 'com.michaelrmac.helloworld'
     defaultConfig {
         applicationId 'com.michaelrmac.helloworld'
         minSdkVersion rootProject.ext.minSdkVersion
